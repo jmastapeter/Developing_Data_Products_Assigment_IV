@@ -9,6 +9,7 @@
 
 library(shiny)
 library(leaflet)
+library(plotly)
 
 shinyUI(fluidPage(
     
@@ -23,7 +24,7 @@ shinyUI(fluidPage(
             )
         ),
         #Main Panel displaying the leaflet Map and plotly Plot
-        mainPanel(fluidRow(leafletOutput("map_I", "100%", 500),plotlyOutput(outputId = "plot_I", "100%", 500)))
+        mainPanel(fluidRow(leafletOutput("map_I", "100%", 500),plotlyOutput(outputId = "scatterplot_I", "100%", 500)))
     )
 ))
 
