@@ -1,0 +1,95 @@
+---
+title: "Assignment IV, Monitoring Beds at United States Hospitals"
+author: "John Mastapeter"
+date: "1/30/2021"
+output: ioslides_presentation
+---
+<style>
+body {
+line-height: 15px;
+marginL 8px 0;
+}
+
+pre {
+  font-size: 8px;
+  line-height: 1;
+}
+</style>
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Coursera Developing Data Project Description
+<font size="3">During the Developing Data Products course, our projects have been focused on creating interactive aids to dynamically visualize information.</font>
+
+<font size="3">My efforts have been focused on indirectly following the effects of COVID 19 in the United States by following the number of beds in use at various kinds of hospitals.The two types of beds I focused on during the course were staffed beds and licensed beds</font>
+
+<font size="2">-Staffed Beds;  An "adult bed, pediatric bed, birthing room, or newborn ICU bed (excluding newborn bassinets) maintained in a patient care area for lodging patients in acute, long term, or domiciliary areas of the hospital."</font>
+
+<font size="2">-Licensed Beds; The maximum number of beds for which a hospital holds a license to operate; however, many hospitals do not operate all the beds for which they are licensed.</font>
+
+## Developing the Map
+<font size="3">Leaflet provides a easy way to adapt geospatial data into an interactive format for the user to manipulate.The following code draws a leaflet map of hospitals in the United States from URL that is peroidically updated</font>
+```{r, echo=TRUE, fig.align='center', fig.cap='Hospital Map Code'}
+library(leaflet)
+
+#Pull Data from URL
+hosp_data <- read.csv("https://opendata.arcgis.com/datasets/1044bb19da8d4dbfb6a96eb1b4ebf629_0.csv", header = TRUE)
+#Complete empty data
+hosp_data <- hosp_data[complete.cases(hosp_data), ]
+
+#Assign Latitude
+hosp_lat <- as.vector(hosp_data$Y)
+#Assign Longitude
+hosp_lng <- as.vector(hosp_data$ï..X)
+#Assign Names
+hosp_names <- as.vector(hosp_data$HOSPITAL_NAME)
+#Asign Color Palette based on Hospitial_TYPE
+pal <- colorFactor(palette = 'Paired', domain = hosp_data$HOSPITAL_TYPE)
+
+#Draw Leaflet Map
+hosp_map <- leaflet(hosp_data)%>%
+addTiles(urlTemplate = "http://{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png", 
+       attribution = '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>')%>%
+addCircleMarkers(lng = ~ï..X, lat = ~Y, radius = 2, color = ~pal(HOSPITAL_TYPE), popup = paste("Name;", 
+hosp_data$HOSPITAL_NAME, "<br>", "Type; ", hosp_data$HOSPITAL_TYPE, "<br>", "Beds; ", hosp_data$NUM_STAFFED_BEDS))
+```
+```{r, echo=TRUE, fig.align='center', fig.height=2, fig.width= 2}
+hosp_map
+```
+
+## Developing the plot
+<font size="3"> Plotly provides an efficient way to visualize the data in as a variety of different plots with a great deal of customization. The following code draws a plotly scatter plot of hospitals in the New England Region of the United States from URL that is peroidically updated</font>
+```{r, include = FALSE, echo=TRUE, fig.align='center', fig.cap='Load Libraries'}
+#Load Libraries
+library(plotly)
+library(dplyr)
+```
+```{r, echo=TRUE, fig.align='center', fig.cap='Hospital Plot Code'}
+#Pull Data from URL
+hosp_data <- read.csv("https://opendata.arcgis.com/datasets/1044bb19da8d4dbfb6a96eb1b4ebf629_0.csv", header = TRUE)
+#Complete empty Data
+hosp_data <- hosp_data[complete.cases(hosp_data), ]
+
+#Develop List of States in New England
+new_england <- c("Connecticut", "Massachusetts", "Vermont", "New Hampshire", "Maine", "Rhode Islannd")
+new_england_hosp <- hosp_data[hosp_data$STATE_NAME %in% new_england ,]
+
+#Draw Plotly Scatter Plot using Staffed and Licensed Beds for each Axis
+new_england_hosp_plot <- plot_ly(data = new_england_hosp, type = 'scatter', x = ~NUM_LICENSED_BEDS, y = ~NUM_STAFFED_BEDS, 
+color = ~HOSPITAL_TYPE, colors = "Paired", mode = 'markers', size = 5, 
+text = ~paste('State: ', STATE_NAME, '</br> Hospital Name: ', HOSPITAL_NAME, '</br> Staffed Beds: ', 
+NUM_STAFFED_BEDS, '</br> Licensed Beds: ', NUM_LICENSED_BEDS))
+
+new_england_hosp_plot <- new_england_hosp_plot %>% layout(title = 'Hospitals in the New England Region', 
+xaxis = list(title = 'Number of Licensed Beds', zeroline = TRUE), yaxis = list(title = 'Number of Staffed Beds'))
+```
+```{r plot, echo=TRUE, fig.align='center', fig.height=2.5, fig.width= 6,fig.cap='Hospital Plot'}
+new_england_hosp_plot
+```
+
+## R Shiny Web Application
+<font size="3">R Shiny provides the proper platform to easily host the reportings and applications. For this project, a simple "ui" code was developed incorporating the key elements of a title, sidebar panel with a dropdown box of the states, and a main panel displaying both the leaflet map and plotly scatter plot. </font>
+
+<font size="3"> Inside the 'server' the use of 'updateSelectizeInput' function and leafletProxy and plotlyProxy allow the user to update the map and scatter plot based off their input. When a new state is selected from the dropdown menu, the map and scatter plot will both auto update to reflect the most recent selection.</font>
+
